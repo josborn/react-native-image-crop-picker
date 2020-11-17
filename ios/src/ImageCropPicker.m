@@ -59,8 +59,10 @@ RCT_EXPORT_MODULE();
             @"minFiles": @1,
             @"maxFiles": @5,
             @"width": @200,
+            @"widthLandscape": @0,
             @"waitAnimationEnd": @YES,
             @"height": @200,
+            @"heightLandscape": @0,
             @"useFrontCamera": @NO,
             @"avoidEmptySpaceAroundImage": @YES,
             @"compressImageQuality": @0.8,
@@ -800,6 +802,11 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     // so resize image
     CGSize desiredImageSize = CGSizeMake([[[self options] objectForKey:@"width"] intValue],
                                          [[[self options] objectForKey:@"height"] intValue]);
+
+    if (croppedImage.size.width > croppedImage.size.height) {
+        desiredImageSize = CGSizeMake([[[self options] objectForKey:@"widthLandscape"] intValue],
+                                         [[[self options] objectForKey:@"heightLandscape"] intValue]);
+    }
     
     UIImage *resizedImage = [croppedImage resizedImageToFitInSize:desiredImageSize scaleIfSmaller:YES];
     ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
@@ -871,6 +878,18 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         cropVC = [[TOCropViewController alloc] initWithImage:image];
         CGFloat widthRatio = [[self.options objectForKey:@"width"] floatValue];
         CGFloat heightRatio = [[self.options objectForKey:@"height"] floatValue];
+        //override if image is landscape and landscape overrides provided
+        if (image.size.width > image.size.height) {
+            CGFloat widthLandscapeRatio = [[self.options objectForKey:@"widthLandscape"] floatValue];
+            CGFloat heightLandscapeRatio = [[self.options objectForKey:@"heightLandscape"] floatValue];
+            if (widthLandscapeRatio > 0) {
+                widthRatio = widthLandscapeRatio;
+            }
+            if (heightLandscapeRatio > 0) {
+                heightRatio = heightLandscapeRatio;
+            }
+        }
+
         if (widthRatio > 0 && heightRatio > 0){
             CGSize aspectRatio = CGSizeMake(widthRatio, heightRatio);
             cropVC.customAspectRatio = aspectRatio;

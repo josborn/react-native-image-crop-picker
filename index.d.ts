@@ -153,6 +153,16 @@ declare module "react-native-image-crop-picker" {
         height?: number;
 
         /**
+         * Landscape Width of result image when used with `cropping` option.
+         */
+        widthLandscape?: number;
+
+        /**
+         * Landscape Height of result image when used with `cropping` option.
+         */
+        heightLandscape?: number;
+
+        /**
          * When set to true, the image file content will be available as a base64-encoded string in
          * the data property. Hint: To use this string as an image source, use it like:
          * <Image source={{uri: `data:${image.mime};base64,${image.data}`}} />
