@@ -88,7 +88,10 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private String cropperToolbarWidgetColor = null;
 
     private int width = 0;
+    private int widthLandscape = 0;
     private int height = 0;
+    private int heightLandscape = 0;
+    private boolean originalIsLandscape = false;
 
     private Uri mCameraCaptureURI;
     private String mCurrentMediaPath;
@@ -120,7 +123,9 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
         includeExif = options.hasKey("includeExif") && options.getBoolean("includeExif");
         width = options.hasKey("width") ? options.getInt("width") : 0;
+        widthLandscape = options.hasKey("widthLandscape") ? options.getInt("widthLandscape") : 0;
         height = options.hasKey("height") ? options.getInt("height") : 0;
+        heightLandscape = options.hasKey("heightLandscape") ? options.getInt("heightLandscape") : 0;
         cropping = options.hasKey("cropping") && options.getBoolean("cropping");
         cropperActiveWidgetColor = options.hasKey("cropperActiveWidgetColor") ? options.getString("cropperActiveWidgetColor") : null;
         cropperStatusBarColor = options.hasKey("cropperStatusBarColor") ? options.getString("cropperStatusBarColor") : null;
@@ -662,10 +667,29 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 .of(uri, Uri.fromFile(new File(this.getTmpDir(activity), UUID.randomUUID().toString() + ".jpg")))
                 .withOptions(options);
 
-        if (width > 0 && height > 0) {
-            uCrop.withAspectRatio(width, height);
+        if (height == 0 || width == 0) {
+            uCrop.start(activity);
+            return;
         }
 
+        //if landscape values provided check selected image orientation
+        if (widthLandscape > 0 && heightLandscape > 0) {
+            BitmapFactory.Options originalDims;
+            try {
+                originalDims = validateImage(resolveRealPath(activity, uri, false));
+            } catch (Exception exc) {
+                uCrop.start(activity);
+                return;
+            }
+            if (originalDims.outWidth > originalDims.outHeight) {
+                originalIsLandscape = true;
+                uCrop.withAspectRatio(widthLandscape, heightLandscape);
+            } else {
+                uCrop.withAspectRatio(width, height);
+            }
+        } else {
+            uCrop.withAspectRatio(width, height);
+        }
         uCrop.start(activity);
     }
 
@@ -749,7 +773,10 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
             if (resultUri != null) {
                 try {
-                    if (width > 0 && height > 0) {
+                    if (widthLandscape > 0 && heightLandscape > 0 && originalIsLandscape) {
+                        File resized = compression.resize(this.reactContext, resultUri.getPath(), widthLandscape, heightLandscape, 100);
+                        resultUri = Uri.fromFile(resized);
+                    } else if (width > 0 && height > 0) {
                         File resized = compression.resize(this.reactContext, resultUri.getPath(), width, height, 100);
                         resultUri = Uri.fromFile(resized);
                     }
